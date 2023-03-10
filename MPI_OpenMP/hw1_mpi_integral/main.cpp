@@ -56,7 +56,7 @@ int main(int argc, char *argv[]) {
 
     // double f[N+1];
     double* f = new double[N+1];
-
+    
     double a = 0;
     double b = 1;
     h = (double)b / N;
