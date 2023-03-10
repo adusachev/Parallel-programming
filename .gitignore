@@ -1,2 +1,4 @@
 MPI_OpenMP/hw1_mpi_integral/a.out
-
+.vscode/
+MPI_OpenMP/hw1_mpi_integral/.ipynb_checkpoints/
+MPI_OpenMP/hw1_mpi_integral/main.cpp
