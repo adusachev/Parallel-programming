@@ -20,8 +20,6 @@ int main(int argc, char *argv[]) {
     // double sum, partial_sum;
     // double h;
 
-
-
     // int N = 100000000;
     // // double f[N+1];
     // double* f = new double[N+1];
