@@ -5,3 +5,5 @@ MPI_OpenMP/hw1_mpi_integral/acceleration_graph2.png
 MPI_OpenMP/hw1_mpi_integral/acceleration_graph3.png
 MPI_OpenMP/hw1_mpi_integral/results2.csv
 MPI_OpenMP/hw1_mpi_integral/results3.csv
+CUDA/a.out
+ParallelComputationExamples/

@@ -17,7 +17,7 @@ void KernelMul(int n, float* x, float* y, float* res) {
 
 
 int main() {
-	int n = 1 << 28;  // 2**28
+	int n = 1 << 26;  // 2**28
 
 	// step 1: allocate Host memory
 	float *h_x = new float[n];
@@ -53,8 +53,8 @@ int main() {
 
 
 	// step 4: run calculations
-	int numBlocks = 6;
-	int blockSize = 64;  // blockSize <= 1024
+	int numBlocks = 1;
+	int blockSize = 1;  // blockSize <= 1024
 	KernelMul<<<numBlocks, blockSize>>>(n, d_x, d_y, d_res);
 
 
