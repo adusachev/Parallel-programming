@@ -49,12 +49,8 @@ int main(int argc, char *argv[]) {
     MPI_Comm_rank(MPI_COMM_WORLD, &pid);
     MPI_Status Status;
 
-
-    // int N = 100000000;
     int N = N_from_cli(argc, argv);
 
-
-    // double f[N+1];
     double* f = new double[N+1];
     
     double a = 0;
@@ -64,14 +60,11 @@ int main(int argc, char *argv[]) {
     n_single = N / n_proc;  // size of subarray for each process
     n_single_last = n_single + (N % n_proc);
 
-    // MPI_Barrier(MPI_COMM_WORLD); /* IMPORTANT */
-    // begin_time = MPI_Wtime();
 
     // master process
     if (pid == 0) {
 
         // grid values
-        // double x[N+1];
         double* x = new double[N+1];
         x[0] = 0;
         for (int i = 1; i < N+1; i++) {
@@ -137,8 +130,6 @@ int main(int argc, char *argv[]) {
             T_p = end_time - begin_time;
             std::cout << "Time parallel: " << T_p << " sec" << std::endl;
 
-            // // save results
-            // write_data(N, T_1, T_p, n_proc);
         }
         else if (n_proc == 1) {
             T_p = T_1;

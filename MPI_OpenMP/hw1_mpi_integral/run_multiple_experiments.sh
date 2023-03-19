@@ -8,14 +8,12 @@ for N in 1000 1000000 100000000
                 echo "#!/bin/bash" > generated_run.sh
                 echo "#" >> generated_run.sh
                 echo "#SBATCH --ntasks="$n_proc >> generated_run.sh
-                echo "#SBATCH --cpus-per-task=1" >> generated_run.sh
                 echo "#SBATCH --partition=RT_study" >> generated_run.sh  # choose PARTITION (!)
                 echo "#SBATCH --nodes=1" >> generated_run.sh
                 echo "#SBATCH --job-name=example" >> generated_run.sh
                 echo "#SBATCH --output=out.txt" >> generated_run.sh
                 echo "#SBATCH --error=error.txt" >> generated_run.sh
 
-                echo "module add centos/8/mpi/hpcx-v2.7.0"  >> generated_run.sh
                 echo "mpiexec ./a.out" $N >> generated_run.sh
 
                 ## DEBUG
@@ -24,7 +22,6 @@ for N in 1000 1000000 100000000
 
                 ## RUN
                 sbatch ./generated_run.sh
-                sleep 20s
             done
     done
 
