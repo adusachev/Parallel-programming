@@ -36,83 +36,117 @@ int N_from_cli(int argc, char *argv[]) {
 
 
 
+// double trap(double left, double right, int n, double h) {
+//     double f_cur, f_next;
+//     double x_cur = left;
+//     double x_next = x_cur + h;
+//     double integral = 0;
+//     for (int i = 0; i < n-1; i++) {
+//         f_cur = 4 / (1 + x_cur * x_cur);
+//         f_next = 4 / (1 + x_next * x_next);
+//         integral += (h * 0.5 * (f_cur + f_next));
+//         x_cur += h;
+//         x_next += h;
+//     }
+
+//     return integral;
+// }
+
+
+
 int main(int argc, char *argv[]) {
     int i;
     int pid, n_proc;
     double sum, partial_sum;
     int n_single, n_single_last, last_index;
-    double begin_time, end_time, T_1, T_p, begin_seq, end_seq;
+    double begin_time, end_time, T_1, T_p, begin_seq, end_seq, global_begin_time, global_end_time, T_global;
     double h;
+    double left, right, last_left, last_right;
+    double f_cur, f_next;
 
     MPI_Init(&argc, &argv);
     MPI_Comm_size(MPI_COMM_WORLD, &n_proc);
     MPI_Comm_rank(MPI_COMM_WORLD, &pid);
     MPI_Status Status;
 
+
     int N = N_from_cli(argc, argv);
 
-    double* f = new double[N+1];
-    
     double a = 0;
     double b = 1;
-    h = (double)b / N;
+    h = (double)(b - a) / N;
+   
 
-    n_single = N / n_proc;  // size of subarray for each process
-    n_single_last = n_single + (N % n_proc);
-
+    if (pid != n_proc-1) {
+        n_single = (N / n_proc);
+    } 
+    else {
+        n_single = (N / n_proc) + (N % n_proc);
+    }
+    
 
     // master process
     if (pid == 0) {
-
-        // grid values
-        double* x = new double[N+1];
-        x[0] = 0;
-        for (int i = 1; i < N+1; i++) {
-            x[i] = x[i-1] + h;
-        }
-        // func values
-        for (int i = 0; i < N+1; i++) {
-            f[i] = 4 / (1 + x[i] * x[i]);
-        }
-        delete[] x;
-
-
         /*
             sequential calculations
         */
         begin_seq = MPI_Wtime();
-        sum = 0;
-        for (i = 0; i < N; i++) {
-            sum += (f[i] + f[i+1]) * h * 0.5;
+        double x_cur = 0;
+        double x_next = x_cur + h;
+        double sum_seq = 0;
+        for (int i = 0; i < N-1; i++) {
+            f_cur = 4 / (1 + x_cur * x_cur);
+            f_next = 4 / (1 + x_next * x_next);
+            sum_seq += (h * 0.5 * (f_cur + f_next));
+            x_cur += h;
+            x_next += h;
         }
         end_seq = MPI_Wtime();
         T_1 = end_seq - begin_seq;
-        std::cout << "Sum sequential: " << sum << std::endl;
-        std::cout << "Time sequential: " << T_1 << " sec" << std::endl;
-
+        std::cout << " ------------------------- \n Sum sequential = " << sum_seq 
+                    << "\n Time sequential: " << T_1 << " sec" << 
+                    "\n -------------------------" << std::endl;
+        
 
         /*
             parallel calculations
         */
         if (n_proc > 1) {
-
             begin_time = MPI_Wtime();
 
-            // send parts of array to other processes
+            // send borders to slaves
             for (i = 1; i < (n_proc-1); i++) {
-                MPI_Send(&f[i * n_single], n_single, MPI_DOUBLE, i, i, MPI_COMM_WORLD);
+                left = a + i * (h*n_single);
+                right = left + (h*n_single);
+                MPI_Send(&left, 1, MPI_DOUBLE, i, i, MPI_COMM_WORLD);
+                // MPI_Send(&right, 1, MPI_DOUBLE, i, i, MPI_COMM_WORLD);
             }
-            // send last part of array, which may have different size
-            last_index = (n_proc-1);
-            MPI_Send(&f[N - n_single_last], n_single_last, MPI_DOUBLE, last_index, last_index, MPI_COMM_WORLD);
+
+            // send last part borders, which may have different size
+            last_left = a + (n_proc - 1) * (h*n_single);
+            last_right = b;
+            MPI_Send(&last_left, 1, MPI_DOUBLE, (n_proc-1), (n_proc-1), MPI_COMM_WORLD);
+            // MPI_Send(&last_right, 1, MPI_DOUBLE, (n_proc-1), (n_proc-1), MPI_COMM_WORLD);
+
 
 
             // master processing its part of array
-            sum = 0;
-            for (i = 0; i < n_single; i++) {
-                sum += (f[i] + f[i+1]) * h * 0.5;
+            // left = a;
+            // right = left + (h*n_single);
+            int n_single = (right - left) / h;
+            double x_cur = 0;
+            double x_next = x_cur + h;
+            double sum = 0;
+            for (int i = 0; i < n_single-1; i++) {
+                f_cur = 4 / (1 + x_cur * x_cur);
+                f_next = 4 / (1 + x_next * x_next);
+                sum += (h * 0.5 * (f_cur + f_next));
+                x_cur += h;
+                x_next += h;
             }
-            std::cout << "pid " << pid << "; " << "partial_sum: " << sum << std::endl;
+            std::cout << "pid: " << pid << " --> " << "partial sum = " << sum << std::endl;
+
+
 
             // master recieve result from other processes and combine all results
             for (i = 1; i < n_proc; i++) {
@@ -121,20 +155,19 @@ int main(int argc, char *argv[]) {
             }
 
             end_time = MPI_Wtime();
-            // final result
-            std::cout << " -------------------- \n Sum parallel = " << sum 
-                    << "\n --------------------" << std::endl;
 
-
-            // print time
+            // final result and time
             T_p = end_time - begin_time;
-            std::cout << "Time parallel: " << T_p << " sec" << std::endl;
+            std::cout << " ------------------------- \n Sum parallel = " << sum 
+                    << "\n Time parallel: " << T_p << " sec" << 
+                    "\n -------------------------" << std::endl;
 
+
+            
         }
         else if (n_proc == 1) {
             T_p = T_1;
         }
-
         // save results
         write_data(N, T_1, T_p, n_proc);
     }
@@ -143,29 +176,31 @@ int main(int argc, char *argv[]) {
 
     if (pid != 0) {        
         // recieve data from master process
-        MPI_Recv(&f[0], n_single, MPI_DOUBLE, 0, pid, MPI_COMM_WORLD, &Status);
-
+        MPI_Recv(&left, 1, MPI_DOUBLE, 0, pid, MPI_COMM_WORLD, &Status);
+        // MPI_Recv(&right, 1, MPI_DOUBLE, 0, pid, MPI_COMM_WORLD, &Status);
+  
         // perform calculations
-        std::cout << "pid " << pid << "; ";
+        double x_cur = left;
+        double x_next = x_cur + h;
         double partial_sum = 0;
-        for (i = 0; i < n_single; i++) {
-            partial_sum += (f[i] + f[i+1]) * h * 0.5;
+        // int n_single = (right - left) / h;
+        for (int i = 0; i < n_single-1; i++) {
+            f_cur = 4 / (1 + x_cur * x_cur);
+            f_next = 4 / (1 + x_next * x_next);
+            partial_sum += (h * 0.5 * (f_cur + f_next));
+            x_cur += h;
+            x_next += h;
         }
-        std::cout << "partial_sum: " << partial_sum << std::endl;
-               
+        std::cout << "pid: " << pid << " --> partial sum = " << partial_sum << std::endl;
+        
         // send calc results back to master
         MPI_Send(&partial_sum, 1, MPI_DOUBLE, 0, pid, MPI_COMM_WORLD);
     }
 
 
-
-    delete[] f;
-
+    
     MPI_Finalize();
-
 
     return 0;
 }
-
-
 
