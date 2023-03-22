@@ -5,7 +5,7 @@ import seaborn as sns
 sns.set(style='ticks', font_scale=1.5)
 
 
-data = pd.read_csv('results_4.csv')
+data = pd.read_csv('results.csv')
 data_sorted = data.sort_values(by=['N', ' p'])
 
 
@@ -26,4 +26,4 @@ plt.ylabel('Ускорение, S(p)')
 plt.legend()
 plt.grid()
 
-fig.savefig('./acceleration_graph_4.png')
+fig.savefig('./acceleration_graph.png')

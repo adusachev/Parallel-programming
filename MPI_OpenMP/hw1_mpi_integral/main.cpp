@@ -36,21 +36,21 @@ int N_from_cli(int argc, char *argv[]) {
 
 
 
-// double trap(double left, double right, int n, double h) {
-//     double f_cur, f_next;
-//     double x_cur = left;
-//     double x_next = x_cur + h;
-//     double integral = 0;
-//     for (int i = 0; i < n-1; i++) {
-//         f_cur = 4 / (1 + x_cur * x_cur);
-//         f_next = 4 / (1 + x_next * x_next);
-//         integral += (h * 0.5 * (f_cur + f_next));
-//         x_cur += h;
-//         x_next += h;
-//     }
 
-//     return integral;
-// }
+double trap_kotes(double left, double right, int n, double h) {
+    double f_0, f_n, f_i, x_cur;
+    f_0 = 4 / (1 + left * left);
+    f_n = 4 / (1 + right * right);
+    double integral = h * 0.5 * (f_0 + f_n);
+    x_cur = left + h;
+    for (int i = 0; i < n-1; i++) {
+        f_i = 4 / (1 + x_cur * x_cur);
+        integral += (f_i * h);
+        x_cur += h;
+    }
+
+    return integral;
+}
 
 
 
@@ -91,16 +91,7 @@ int main(int argc, char *argv[]) {
             sequential calculations
         */
         begin_seq = MPI_Wtime();
-        double x_cur = 0;
-        double x_next = x_cur + h;
-        double sum_seq = 0;
-        for (int i = 0; i < N-1; i++) {
-            f_cur = 4 / (1 + x_cur * x_cur);
-            f_next = 4 / (1 + x_next * x_next);
-            sum_seq += (h * 0.5 * (f_cur + f_next));
-            x_cur += h;
-            x_next += h;
-        }
+        double sum_seq = trap_kotes(a, b, N, h);
         end_seq = MPI_Wtime();
         T_1 = end_seq - begin_seq;
         std::cout << " ------------------------- \n Sum sequential = " << sum_seq 
@@ -119,33 +110,20 @@ int main(int argc, char *argv[]) {
                 left = a + i * (h*n_single);
                 right = left + (h*n_single);
                 MPI_Send(&left, 1, MPI_DOUBLE, i, i, MPI_COMM_WORLD);
-                // MPI_Send(&right, 1, MPI_DOUBLE, i, i, MPI_COMM_WORLD);
+                MPI_Send(&right, 1, MPI_DOUBLE, i, i, MPI_COMM_WORLD);
             }
-
             // send last part borders, which may have different size
             last_left = a + (n_proc - 1) * (h*n_single);
             last_right = b;
             MPI_Send(&last_left, 1, MPI_DOUBLE, (n_proc-1), (n_proc-1), MPI_COMM_WORLD);
-            // MPI_Send(&last_right, 1, MPI_DOUBLE, (n_proc-1), (n_proc-1), MPI_COMM_WORLD);
-
-
+            MPI_Send(&last_right, 1, MPI_DOUBLE, (n_proc-1), (n_proc-1), MPI_COMM_WORLD);
 
             // master processing its part of array
-            // left = a;
-            // right = left + (h*n_single);
+            left = a;
+            right = left + (h*n_single);
             int n_single = (right - left) / h;
-            double x_cur = 0;
-            double x_next = x_cur + h;
-            double sum = 0;
-            for (int i = 0; i < n_single-1; i++) {
-                f_cur = 4 / (1 + x_cur * x_cur);
-                f_next = 4 / (1 + x_next * x_next);
-                sum += (h * 0.5 * (f_cur + f_next));
-                x_cur += h;
-                x_next += h;
-            }
+            sum = trap_kotes(left, right, n_single, h);
             std::cout << "pid: " << pid << " --> " << "partial sum = " << sum << std::endl;
-
 
 
             // master recieve result from other processes and combine all results
@@ -161,9 +139,7 @@ int main(int argc, char *argv[]) {
             std::cout << " ------------------------- \n Sum parallel = " << sum 
                     << "\n Time parallel: " << T_p << " sec" << 
                     "\n -------------------------" << std::endl;
-
-
-            
+  
         }
         else if (n_proc == 1) {
             T_p = T_1;
@@ -177,20 +153,14 @@ int main(int argc, char *argv[]) {
     if (pid != 0) {        
         // recieve data from master process
         MPI_Recv(&left, 1, MPI_DOUBLE, 0, pid, MPI_COMM_WORLD, &Status);
-        // MPI_Recv(&right, 1, MPI_DOUBLE, 0, pid, MPI_COMM_WORLD, &Status);
-  
+        MPI_Recv(&right, 1, MPI_DOUBLE, 0, pid, MPI_COMM_WORLD, &Status);
+        
         // perform calculations
         double x_cur = left;
         double x_next = x_cur + h;
         double partial_sum = 0;
-        // int n_single = (right - left) / h;
-        for (int i = 0; i < n_single-1; i++) {
-            f_cur = 4 / (1 + x_cur * x_cur);
-            f_next = 4 / (1 + x_next * x_next);
-            partial_sum += (h * 0.5 * (f_cur + f_next));
-            x_cur += h;
-            x_next += h;
-        }
+
+        partial_sum = trap_kotes(left, right, n_single, h);
         std::cout << "pid: " << pid << " --> partial sum = " << partial_sum << std::endl;
         
         // send calc results back to master
