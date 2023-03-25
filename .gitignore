@@ -7,3 +7,4 @@ CUDA/MatrixMul.cu
 *.out
 *tmp.cpp
 *tmp.cu
+CUDA/KernelMatrixAdd.cu
