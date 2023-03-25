@@ -2,6 +2,8 @@
 *.ipynb_checkpoints/
 MPI_OpenMP/hw1_mpi_integral/acceleration_graph_*
 MPI_OpenMP/hw1_mpi_integral/results_*
+MPI/hw1_mpi_integral/acceleration_graph_*
+MPI/hw1_mpi_integral/results_*
 ParallelComputationExamples/
 CUDA/MatrixMul.cu
 *.out
