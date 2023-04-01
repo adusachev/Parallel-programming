@@ -9,3 +9,7 @@ CUDA/MatrixMul.cu
 *.out
 *tmp.cpp
 *tmp.cu
+*tmp.sh
+CUDA/clear.sh
+tests.ipynb
+*.txt

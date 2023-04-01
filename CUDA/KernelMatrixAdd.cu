@@ -67,9 +67,10 @@ int main() {
 
 	EyeMatrix(h_A, height, width);
 	EyeMatrix(h_B, height, width);
+	// OnesMatrix(h_A, height, width);
+	// OnesMatrix(h_B, height, width);
 
     // PrintMatrix(h_A, height, width);
-
 
 	float* d_A;
 	float* d_B;
@@ -77,9 +78,9 @@ int main() {
 	cudaMalloc(&d_A, sizeof(float) * height * width);
 	cudaMalloc(&d_B, sizeof(float) * height * width);
 	cudaMalloc(&d_C, sizeof(float) * height * width);
+
     cudaMemcpy(d_A, h_A, sizeof(float) * height * width, cudaMemcpyHostToDevice);
     cudaMemcpy(d_B, h_B, sizeof(float) * height * width, cudaMemcpyHostToDevice);
-
 
     // measure calculations time
 	cudaEvent_t start, end;
@@ -88,14 +89,23 @@ int main() {
 	cudaEventCreate(&end);
 	cudaEventRecord(start);
 
+    // 2D blocks and grid
+	int blockSize_x = 16;
+	int blockSize_y = 16;
+    dim3 block_size(blockSize_x, blockSize_y);  // each block has 16x16 threads
 
-    // двумерные блоки и потоки
-    dim3 num_blocks(8, 16);  // 8x16 блоков 
-    dim3 block_size(16, 16);  // в каждом блоке 16х16 потоков
+	// want:  block_dim.x * num_blocks.x = width
+    //        block_dim.y * num_blocks.y = height	
+	int numBlocks_x = (width + blockSize_x - 1) / blockSize_x;
+	int numBlocks_y = (height + blockSize_x - 1) / blockSize_x;
+	dim3 num_blocks(numBlocks_x, numBlocks_y);  // (order ???)
+	
+	// dim3 num_blocks(8, 16);  // 8x16 blocks
 
-    // хотим: block_dim.x * num_blocks.x = width
-    //        block_dim.y * num_blocks.y = height
-    // 8*16=128, 16*16=256 - как чсило строк и столбцов в матрице С
+    std::cout << "numBlocks_x = " << numBlocks_x << "; numBlocks_y = " << numBlocks_y << std::endl;
+	std::cout << "block_dim.x * num_blocks.x = " << blockSize_x * numBlocks_x << " <= " << width << " = width" << std::endl;
+	std::cout << "block_dim.y * num_blocks.y = " << blockSize_y * numBlocks_y << " <= " << height << " = height" << std::endl;
+
 
     KernelMatrixAdd<<<num_blocks, block_size>>>(height, width, d_A, d_B, d_C);
 
