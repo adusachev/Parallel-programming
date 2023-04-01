@@ -65,8 +65,8 @@ void MatrixMul(float* A, float* B, float* C, int mid_size) {
 	/* 
 		Matrix multiplication A * B = C
 	*/
-    int i = blockIdx.x * blockDim.x + threadIdx.x;  // координаты потоков по осям х и у
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int i = blockIdx.x * blockDim.x + threadIdx.x;  // номер строки
+    int j = blockIdx.y * blockDim.y + threadIdx.y;  // номер столбца
 
     int height = blockDim.x * gridDim.x;
     int width = blockDim.y * gridDim.y;
@@ -99,8 +99,8 @@ int main() {
 
 	// EyeMatrix(h_A, A_height, A_width);
 	// EyeMatrix(h_B, B_height, B_width);
-	RandomMatrix(h_A, A_height, A_width, 6);
-	RandomMatrix(h_B, B_height, B_width, 6);
+	RandomMatrix(h_A, A_height, A_width, 12);
+	RandomMatrix(h_B, B_height, B_width, 12);
 
 	save_matrix(h_A, A_height, A_width, "A.txt");
 	save_matrix(h_B, B_height, B_width, "B.txt");
@@ -122,21 +122,19 @@ int main() {
 	int blockSize_x = 16;
 	int blockSize_y = 16;
 
-	// want:  block_dim.x * num_blocks.x = width_C - size od matrix C
-    //        block_dim.y * num_blocks.y = height_C
-	int numBlocks_x = (C_width + blockSize_x - 1) / blockSize_x;
-	int numBlocks_y = (C_height + blockSize_y - 1) / blockSize_y;
+	// want:  block_dim.x * num_blocks.x = height_C - size od matrix C
+    //        block_dim.y * num_blocks.y = width_C
+	int numBlocks_x = (C_height + blockSize_x - 1) / blockSize_x;
+	int numBlocks_y = (C_width + blockSize_y - 1) / blockSize_y;
 
 	std::cout << "numBlocks_x = " << numBlocks_x << "; numBlocks_y = " << numBlocks_y << std::endl;
 	std::cout << "block_dim.x * num_blocks.x = " << blockSize_x * numBlocks_x 
-			  << " <= " << C_width << " = width of C matrix" << std::endl;
-	std::cout << "block_dim.y * num_blocks.y = " << blockSize_y * numBlocks_y 
 			  << " <= " << C_height << " = height of C matrix" << std::endl;
-
+	std::cout << "block_dim.y * num_blocks.y = " << blockSize_y * numBlocks_y 
+			  << " <= " << C_width << " = width of C matrix" << std::endl;
 
 	dim3 block_size(blockSize_x, blockSize_y);
-	// dim3 num_blocks(numBlocks_x, numBlocks_y);  // mul is wrong (why?)  // numBlocks_x = 16; numBlocks_y = 8
-	dim3 num_blocks(numBlocks_y, numBlocks_x);
+	dim3 num_blocks(numBlocks_x, numBlocks_y);
     // dim3 num_blocks(8, 16);
 
 

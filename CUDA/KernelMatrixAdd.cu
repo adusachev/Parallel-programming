@@ -40,8 +40,8 @@ __global__ void KernelMatrixAdd(int height, int width, float* A, float* B, float
     /* 
 		Matrix sum: A + B = C
 	*/
-    int i = blockIdx.x * blockDim.x + threadIdx.x;  // координаты потоков по осям х и у
-    int j = blockIdx.y * blockDim.y + threadIdx.y;
+    int i = blockIdx.x * blockDim.x + threadIdx.x;  // номер строки
+    int j = blockIdx.y * blockDim.y + threadIdx.y;  // номер столбца 
     
     // так как каждый элемент обрабатывается своим потоком, цикл не нужен
     // for (int k = 0; k < height * width; k++) {
@@ -94,17 +94,17 @@ int main() {
 	int blockSize_y = 16;
     dim3 block_size(blockSize_x, blockSize_y);  // each block has 16x16 threads
 
-	// want:  block_dim.x * num_blocks.x = width
-    //        block_dim.y * num_blocks.y = height	
-	int numBlocks_x = (width + blockSize_x - 1) / blockSize_x;
-	int numBlocks_y = (height + blockSize_x - 1) / blockSize_x;
-	dim3 num_blocks(numBlocks_x, numBlocks_y);  // (order ???)
-	
+	// want:  block_dim.x * num_blocks.x = height
+    //        block_dim.y * num_blocks.y = width
+	int numBlocks_x = (height + blockSize_y - 1) / blockSize_x;
+	int numBlocks_y = (width + blockSize_x - 1) / blockSize_x;
+	dim3 num_blocks(numBlocks_x, numBlocks_y);
+
 	// dim3 num_blocks(8, 16);  // 8x16 blocks
 
     std::cout << "numBlocks_x = " << numBlocks_x << "; numBlocks_y = " << numBlocks_y << std::endl;
-	std::cout << "block_dim.x * num_blocks.x = " << blockSize_x * numBlocks_x << " <= " << width << " = width" << std::endl;
-	std::cout << "block_dim.y * num_blocks.y = " << blockSize_y * numBlocks_y << " <= " << height << " = height" << std::endl;
+	std::cout << "block_dim.x * num_blocks.x = " << blockSize_x * numBlocks_x << " <= " << height << " = height" << std::endl;
+	std::cout << "block_dim.y * num_blocks.y = " << blockSize_y * numBlocks_y << " <= " << width << " = width" << std::endl;
 
 
     KernelMatrixAdd<<<num_blocks, block_size>>>(height, width, d_A, d_B, d_C);
