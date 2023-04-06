@@ -5,11 +5,12 @@ MPI_OpenMP/hw1_mpi_integral/results_*
 MPI/hw1_mpi_integral/acceleration_graph_*
 MPI/hw1_mpi_integral/results_*
 ParallelComputationExamples/
-CUDA/MatrixMul.cu
 *.out
 *tmp.cpp
 *tmp.cu
 *tmp.sh
-CUDA/clear.sh
+CUDA/clear_ABC.sh
 tests.ipynb
 *.txt
+Multithreading_examples/
+draft_*
