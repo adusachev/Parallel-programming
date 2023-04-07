@@ -3,7 +3,17 @@
 #include <string>
 #include <sstream>
 
-#define BLOCK_SIZE 256
+
+void write_results(int block_size, double time, std::string filename="./results.csv") {
+    /*
+    	Write block_size and time values to the end of the file "filename"
+    */
+    std::ofstream out; 
+    out.open(filename, std::ios::app);
+    out << block_size << ", " << time << "\n";
+    out.close();
+}
+
 
 
 void EyeMatrix(float* matrix, int height, int width) {
@@ -79,7 +89,7 @@ void MatrixMul(float* A, float* B, float* C, int mid_size) {
 }
 
 
-int main() {
+int main(int argc, char *argv[]) {
 	float *h_A;
 	float *h_B;
 	float *h_C;
@@ -93,7 +103,7 @@ int main() {
 	// int C_height = 5; int C_width = 7;
 	// int mid_size = 6;
 
-	h_A = new float[A_height * A_width];  // выделяем матрицы как flatten массивы
+	h_A = new float[A_height * A_width];
 	h_B = new float[B_height * B_width];
 	h_C = new float[C_height * C_width];
 
@@ -119,8 +129,10 @@ int main() {
 	cudaMemcpy(d_C, h_C, sizeof(float) * C_height * C_width, cudaMemcpyHostToDevice);
 
 	// 2D blocks and grid
-	int blockSize_x = 16;
-	int blockSize_y = 16;
+	int BS = atoi(argv[1]);  // get blocksize from command line
+	// int BS = 16;
+	int blockSize_x = BS;
+	int blockSize_y = BS;
 
 	// want:  block_dim.x * num_blocks.x = height_C - size od matrix C
     //        block_dim.y * num_blocks.y = width_C
@@ -135,15 +147,26 @@ int main() {
 
 	dim3 block_size(blockSize_x, blockSize_y);
 	dim3 num_blocks(numBlocks_x, numBlocks_y);
-    // dim3 num_blocks(8, 16);
+
+	// measure calculations time
+	cudaEvent_t start, end;
+	float milliseconds;
+	cudaEventCreate(&start);
+	cudaEventCreate(&end);
+	cudaEventRecord(start);
 
 
     MatrixMul<<<num_blocks, block_size>>>(d_A, d_B, d_C, mid_size);
 
+	cudaEventRecord(end);  // end time measure
+
     cudaMemcpy(h_C, d_C, sizeof(float) * C_height * C_width, cudaMemcpyDeviceToHost);
 
+	cudaEventSynchronize(end);
+	cudaEventElapsedTime(&milliseconds, start, end);
+	std::cout << "Time elapsed: " << milliseconds << " ms " << std::endl;
+
 	save_matrix(h_C, C_height, C_width, "C.txt");
-    // PrintMatrix(h_C, 128, 256);
 
 	cudaFree(d_A);
 	cudaFree(d_B);
@@ -152,6 +175,8 @@ int main() {
 	delete[] h_A;
 	delete[] h_B;
 	delete[] h_C;
+
+	write_results(blockSize_x * blockSize_y, milliseconds);
 
 	return 0;
 }
