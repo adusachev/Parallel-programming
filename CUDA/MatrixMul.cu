@@ -75,8 +75,8 @@ void MatrixMul(float* A, float* B, float* C, int mid_size) {
 	/* 
 		Matrix multiplication A * B = C
 	*/
-    int i = blockIdx.x * blockDim.x + threadIdx.x;  // номер строки
-    int j = blockIdx.y * blockDim.y + threadIdx.y;  // номер столбца
+    int i = blockIdx.x * blockDim.x + threadIdx.x;  // line num
+    int j = blockIdx.y * blockDim.y + threadIdx.y;  // column num
 
     int height = blockDim.x * gridDim.x;
     int width = blockDim.y * gridDim.y;
@@ -176,7 +176,7 @@ int main(int argc, char *argv[]) {
 	delete[] h_B;
 	delete[] h_C;
 
-	write_results(blockSize_x * blockSize_y, milliseconds);
+	write_results(blockSize_x, milliseconds);
 
 	return 0;
 }
