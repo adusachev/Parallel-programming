@@ -79,10 +79,11 @@ int main(int argc, char *argv[]){
 	clock_gettime(CLOCK_REALTIME, &begin);
    
    
-	for(i = 1; i < NUM_THREADS; ++i){
+	for (i = 1; i < NUM_THREADS; ++i){
 		index[i] = i;   
 		//rc = pthread_create(&pthr[i], NULL, start_func, (void*)&i);
 		rc = pthread_create(&pthr[i], NULL, start_func, (void*)&index[i]);      
+		
 		if (rc){
 			printf("ERROR; return code from pthread_create() is %d\n", rc);
 		}
