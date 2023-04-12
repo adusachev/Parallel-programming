@@ -1,6 +1,8 @@
 #include <iostream>
 #include <cmath>
 
+#include "WriteResults.h"
+
 
 __global__ void KernelAdd(int numElements, float* x, float* y, float* result) {
     int index = blockIdx.x * blockDim.x + threadIdx.x;

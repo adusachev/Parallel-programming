@@ -1,73 +1,8 @@
 #include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
 
+#include "matrix_functions.h"
+#include "WriteResults.h"
 
-void write_results(int block_size, double time, std::string filename="./results.csv") {
-    /*
-    	Write block_size and time values to the end of the file "filename"
-    */
-    std::ofstream out; 
-    out.open(filename, std::ios::app);
-    out << block_size << ", " << time << "\n";
-    out.close();
-}
-
-
-
-void EyeMatrix(float* matrix, int height, int width) {
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			if (i == j) {
-				matrix[i * width + j] = 1;
-			} else {
-				matrix[i * width + j] = 0;
-			}
-		}
-	}
-}
-
-void OnesMatrix(float* matrix, int height, int width) {
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			matrix[i * width + j] = 1;
-		}
-	}
-}
-
-
-void save_matrix(float* matrix, int height, int width, std::string filename="./generated_matrix.csv") {
-	std::ofstream out; 
-	out.open(filename, std::ios::app);
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			out << matrix[i * width + j] << " ";
-		}
-	}
-	out << "\n";
-}
-
-
-void RandomMatrix(float* matrix, int height, int width, int max_num) {
-	/*
-		Fill matrix with random ints from 0 to (max_num-1)
-	*/
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			matrix[i * width + j] = rand() % max_num;
-		}
-	}
-}
-
-void PrintMatrix(float *matrix, int height, int width) {
-
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			std::cout << i << " " << j << " " << matrix[i * width + j] << "\n";
-		}
-	}
-}
 
 
 __global__
@@ -101,8 +36,8 @@ int main(int argc, char *argv[]) {
 
 	// EyeMatrix(h_A, height, width);
 	RandomMatrix(h_A, height, width, 10);
+	// save_matrix(h_A, height, width, "A.txt");
 
-	save_matrix(h_A, height, width, "A.txt");
 
 	float* d_A;
 	float* d_x;
@@ -115,10 +50,10 @@ int main(int argc, char *argv[]) {
     cudaMemcpy(d_x, h_x, sizeof(float) * width, cudaMemcpyHostToDevice);
     cudaMemcpy(d_y, h_y, sizeof(float) * height, cudaMemcpyHostToDevice);
 
-	// int block_size = atoi(argv[1]);  // get blocksize from command line
-	int block_size = 32;
+	int blockSize = atoi(argv[1]);  // get blocksize from command line
+	// int blockSize = 32;
 
-	int num_blocks = (height + block_size - 1) / block_size;
+	int num_blocks = (height + blockSize - 1) / blockSize;
 
 	// measure calculations time
 	cudaEvent_t start, end;
@@ -128,7 +63,7 @@ int main(int argc, char *argv[]) {
 	cudaEventRecord(start);
 
 
-    MatrixVectorMul<<<num_blocks, block_size>>>(d_A, d_x, d_y, width);
+    MatrixVectorMul<<<num_blocks, blockSize>>>(d_A, d_x, d_y, width);
 
 	cudaEventRecord(end);  // end time measure
 
@@ -137,9 +72,6 @@ int main(int argc, char *argv[]) {
 	cudaEventSynchronize(end);
 	cudaEventElapsedTime(&milliseconds, start, end);
 
-    for (int i = 0; i < 4; ++i) {
-		std::cout << h_y[i] << "\n";
-	}
 
 	std::cout << "Time elapsed: " << milliseconds << " ms " << std::endl;
 
@@ -152,7 +84,7 @@ int main(int argc, char *argv[]) {
 	delete[] h_x;
 	delete[] h_y;
 
-	// write_results(blockSize_x * blockSize_y, milliseconds);
+	write_results(blockSize, milliseconds);
 
 	return 0;
 }

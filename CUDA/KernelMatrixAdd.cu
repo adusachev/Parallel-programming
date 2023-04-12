@@ -3,35 +3,11 @@
 #define BLOCK_SIZE 256
 
 
-void EyeMatrix(float* matrix, int height, int width) {
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			if (i == j) {
-				matrix[i * width + j] = 1;
-			} else {
-				matrix[i * width + j] = 0;
-			}
-		}
-	}
-}
-
-void OnesMatrix(float* matrix, int height, int width) {
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			matrix[i * width + j] = 1;
-		}
-	}
-}
+#include "matrix_functions.h"
+#include "WriteResults.h"
 
 
-void PrintMatrix(float *matrix, int height, int width) {
 
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			std::cout << "(i, j)=(" << i << ", " << j << ") --> " << matrix[i * width + j] << "\n";
-		}
-	}
-}
 
 
 
@@ -40,24 +16,22 @@ __global__ void KernelMatrixAdd(int height, int width, float* A, float* B, float
     /* 
 		Matrix sum: A + B = C
 	*/
-    int i = blockIdx.x * blockDim.x + threadIdx.x;  // номер строки
-    int j = blockIdx.y * blockDim.y + threadIdx.y;  // номер столбца 
+    int i = blockIdx.x * blockDim.x + threadIdx.x;  // line num
+    int j = blockIdx.y * blockDim.y + threadIdx.y;  // column num 
     
-    // так как каждый элемент обрабатывается своим потоком, цикл не нужен
-    // for (int k = 0; k < height * width; k++) {
     result[i * width + j] = A[i * width + j] + B[i * width + j];
-    // }
+    
 }
 
 
 
-int main() {
+int main(int argc, char *argv[]) {
 	float *h_A;
 	float *h_B;
 	float *h_C;
 
-    int height = 128;
-    int width = 256;
+    int height = 1280;
+    int width = 2560;
     // int height = 3;
     // int width = 3;
 
@@ -90,8 +64,10 @@ int main() {
 	cudaEventRecord(start);
 
     // 2D blocks and grid
-	int blockSize_x = 16;
-	int blockSize_y = 16;
+	int BS = atoi(argv[1]);  // get blocksize from command line
+	// int BS = 16;
+	int blockSize_x = BS;
+	int blockSize_y = BS;
     dim3 block_size(blockSize_x, blockSize_y);  // each block has 16x16 threads
 
 	// want:  block_dim.x * num_blocks.x = height
@@ -125,6 +101,8 @@ int main() {
 	delete[] h_A;
 	delete[] h_B;
 	delete[] h_C;
+
+	write_results(blockSize_x, milliseconds);
 
 	return 0;
 }

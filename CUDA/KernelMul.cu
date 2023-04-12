@@ -1,6 +1,10 @@
 #include <iostream>
 #include <cmath>
 
+#include "WriteResults.h"
+
+
+
 
 __global__
 void KernelMul(int n, float* x, float* y, float* res) {
@@ -16,7 +20,7 @@ void KernelMul(int n, float* x, float* y, float* res) {
 }
 
 
-int main() {
+int main(int argc, char *argv[]) {
 	int n = 1 << 26;  // 2**28
 
 	// step 1: allocate Host memory
@@ -53,11 +57,10 @@ int main() {
 
 
 	// step 4: run calculations
-	int blockSize = 256;
+	int blockSize = atoi(argv[1]);  // get blocksize from command line
+	// int blockSize = 256;
 	int numBlocks = (n + blockSize - 1) / blockSize;
 
-	int numBlocks = 1;
-	int blockSize = 1;  // blockSize <= 1024
 	KernelMul<<<numBlocks, blockSize>>>(n, d_x, d_y, d_res);
 
 
@@ -82,6 +85,8 @@ int main() {
 	cudaFree(d_x);
 	cudaFree(d_y);
 	cudaFree(d_res);
+
+	write_results(blockSize, milliseconds);
 
 
 	return 0;

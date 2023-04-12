@@ -14,3 +14,4 @@ tests.ipynb
 *.txt
 Multithreading_examples/
 draft_*
+test_graph*.png

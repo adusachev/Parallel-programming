@@ -1,73 +1,8 @@
 #include <iostream>
-#include <fstream>
-#include <string>
-#include <sstream>
 
+#include "matrix_functions.h"
+#include "WriteResults.h"
 
-void write_results(int block_size, double time, std::string filename="./results.csv") {
-    /*
-    	Write block_size and time values to the end of the file "filename"
-    */
-    std::ofstream out; 
-    out.open(filename, std::ios::app);
-    out << block_size << ", " << time << "\n";
-    out.close();
-}
-
-
-
-void EyeMatrix(float* matrix, int height, int width) {
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			if (i == j) {
-				matrix[i * width + j] = 1;
-			} else {
-				matrix[i * width + j] = 0;
-			}
-		}
-	}
-}
-
-void OnesMatrix(float* matrix, int height, int width) {
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			matrix[i * width + j] = 1;
-		}
-	}
-}
-
-
-void save_matrix(float* matrix, int height, int width, std::string filename="./generated_matrix.csv") {
-	std::ofstream out; 
-	out.open(filename, std::ios::app);
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			out << matrix[i * width + j] << " ";
-		}
-	}
-	out << "\n";
-}
-
-
-void RandomMatrix(float* matrix, int height, int width, int max_num) {
-	/*
-		Fill matrix with random ints from 0 to (max_num-1)
-	*/
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			matrix[i * width + j] = rand() % max_num;
-		}
-	}
-}
-
-void PrintMatrix(float *matrix, int height, int width) {
-
-	for (int i = 0; i < height; ++i) {
-		for (int j = 0; j < width; ++j) {
-			std::cout << i << " " << j << " " << matrix[i * width + j] << "\n";
-		}
-	}
-}
 
 
 __global__
@@ -107,13 +42,11 @@ int main(int argc, char *argv[]) {
 	h_B = new float[B_height * B_width];
 	h_C = new float[C_height * C_width];
 
-	// EyeMatrix(h_A, A_height, A_width);
-	// EyeMatrix(h_B, B_height, B_width);
 	RandomMatrix(h_A, A_height, A_width, 12);
 	RandomMatrix(h_B, B_height, B_width, 12);
 
-	save_matrix(h_A, A_height, A_width, "A.txt");
-	save_matrix(h_B, B_height, B_width, "B.txt");
+	// save_matrix(h_A, A_height, A_width, "A.txt");
+	// save_matrix(h_B, B_height, B_width, "B.txt");
 
     // PrintMatrix(h_A, A_height, A_width);
 

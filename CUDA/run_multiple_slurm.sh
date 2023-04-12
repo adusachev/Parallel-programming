@@ -13,7 +13,7 @@ for BlockSize in 4 8 16 32 64 128 256
         echo "#SBATCH --output=out.txt" >> generated_run.sh
         echo "#SBATCH --error=error.txt" >> generated_run.sh
         
-        echo "nvcc MatrixMul.cu" >> generated_run.sh
+        echo "nvcc MatrixMul.cu" >> generated_run.sh  # choose program name
         echo "./a.out" $BlockSize >> generated_run.sh
 
         ## DEBUG

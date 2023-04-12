@@ -18,7 +18,7 @@ plt.plot(blocksizes, times)
 
 plt.xlabel('Block size')
 plt.ylabel('Time, ms')
-plt.xticks(blocksizes)
+# plt.xticks(blocksizes)
 plt.grid()
 
 fig.savefig('./test_graph_matrixmul.png')
