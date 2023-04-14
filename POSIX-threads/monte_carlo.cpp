@@ -1,92 +1,121 @@
 #include<stdio.h>
 #include<iostream>
+#include<fstream>
 #include<stdlib.h>
 #include <unistd.h>
+#include <sys/syscall.h>
 #include<pthread.h>
 #include <semaphore.h>
 #include<math.h>
 
 #include <random>
 
+#define gettid() syscall(SYS_gettid)
 
-#define NUM_THREADS 2
+// #define NUM_THREADS 2
 sem_t sem;
 int n = 0;
 
 
 
-
-double uniform_random_double(double left, double right) {
-
-    std::random_device rd;
-    std::mt19937 gen(rd());
-    // std::default_random_engine rd;  // fix default random seed
- 
-    std::uniform_real_distribution<double> unif(left, right);
- 
-    double random_double = unif(rd);
-    return random_double;
+void write_data(double T_1, double T_p, int n_threads, std::string filename="./results.csv") {
+    /*
+        Write data to the end of the file filename
+    */
+    std::ofstream out; 
+    out.open(filename, std::ios::app);
+    out << T_1 << ", " << T_p << ", " << n_threads << "\n";
+    out.close();
 }
 
+
  
 
-double integrate(int N) {
-    double x_min = 0;
-    double x_max = 3.14;
-    double y_min = 0;
-    double y_max = 1;
-    double z_min = 0;
-    double z_max = 3.14 / 2;
+// double integrate(int N) {
+//     double x_min = 0;
+//     double x_max = 3.14;
+//     double y_min = 0;
+//     double y_max = 1;
+//     double z_min = 0;
+//     double z_max = 3.14 / 2;
 
-    double xi, yi, zi;
-    double V_cube = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
+//     double xi, yi, zi;
+//     double V_cube = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
 
-    int n = 0;
-    for (int i = 0; i < N; i++) {
-        xi = uniform_random_double(x_min, x_min + x_max);
-        yi = uniform_random_double(y_min, y_min + y_max);
-        zi = uniform_random_double(z_min, z_min + z_max);
+//     int n_master = 0;
+//     for (int i = 0; i < N; i++) {
+//         xi = ((float)rand() / RAND_MAX) * (3.14 - 0) + 0;
+//         yi = ((float)rand() / RAND_MAX) * (1 - 0) + 0;
+//         zi = ((float)rand() / RAND_MAX) * (1.57 - 0) + 0;
 
-        if ((yi <= sin(xi)) && (zi <= xi * yi)) {
-            n += 1;
-        }
-    }
+//         if ((yi <= sin(xi)) && (zi <= xi * yi)) {
+//             n_master += 1;
+//         }
+//     }
 
-    double ans_monte_carlo = ((double)n / N) * V_cube;
+//     double ans_monte_carlo = ((double)n_master / N) * V_cube;
     
-    return ans_monte_carlo;
-}
+//     return ans_monte_carlo;
+// }
 
 
 
 
 
-
-////////////////////////////////////////////////////////////////////////////////////
 
 
 void *start_func(void* param) {
 
 	
+
 	int *N_per_thread;
     N_per_thread = (int*) param;
 
-
     pid_t tid = gettid();
-
+    
+    sem_wait(&sem);
     double xi, yi, zi;
+    unsigned int seed_x = (unsigned int)tid * 33421;
+    unsigned int seed_y = (unsigned int)tid * 55893;
+    unsigned int seed_z = (unsigned int)tid * 14901;
+
+    // xi = ((double)rand_r(&seed_x) / RAND_MAX) * (3.14 - 0) + 0;
+    // yi = ((double)rand_r(&seed_y) / RAND_MAX) * (1 - 0) + 0;
+    // zi = ((double)rand_r(&seed_z) / RAND_MAX) * (1.57 - 0) + 0;
+
+    // std::cout << "It's one thread " << std::endl;
+
+    // std::cout << seed_x << " " << seed_y << " " << seed_z << std::endl;
+    std::cout << "Thread " << tid << "; Points per this thread " << *N_per_thread << std::endl;
+    sem_post(&sem);
+
+
+    
     int local = 0;
     for (int i = 0; i < *N_per_thread; i++) {
-        xi = uniform_random_double(0, 3.14);
-        yi = uniform_random_double(0, 1);
-        zi = uniform_random_double(0, 1.57);
+        xi = ((float)rand_r(&seed_x) / RAND_MAX) * (3.14 - 0) + 0;
+        yi = ((float)rand_r(&seed_y) / RAND_MAX) * (1 - 0) + 0;
+        zi = ((float)rand_r(&seed_z) / RAND_MAX) * (1.57 - 0) + 0;
+        
+        // xi = ((float)rand() / RAND_MAX) * (3.14 - 0) + 0;
+        // yi = ((float)rand() / RAND_MAX) * (1 - 0) + 0;
+        // zi = ((float)rand() / RAND_MAX) * (1.57 - 0) + 0;
+
+        // sem_wait(&sem);
+        // if (i < 1) {
+        //     std::cout << xi << ", " << yi << ", " << zi << std::endl;
+        // }
+        // sem_post(&sem);
+
 
         if ((yi <= sin(xi)) && (zi <= xi * yi)) {
             local += 1;
         }
     }
 
-    std::cout << "It's thread " << tid << "; local_n = " << local << std::endl;
+    std::cout << "Thread " << tid << "; local_n = " << local << std::endl;
+    std::cout << "------------------------------------ " << std::endl;
+
 
 
 	sem_wait(&sem);
@@ -102,8 +131,10 @@ void *start_func(void* param) {
 
 int main(int argc, char *argv[]){
 
+    int NUM_THREADS = atoi(argv[1]);
+
   	int rc;
-    int N = 1000000;
+    int N = 100000000;
     double x_min = 0;
     double x_max = 3.14;
     double y_min = 0;
@@ -111,23 +142,56 @@ int main(int argc, char *argv[]){
     double z_min = 0;
     double z_max = 3.14 / 2;
     double V_cube = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
-
-    int N_per_thread = N / NUM_THREADS;    
 	
 	
-	// int index[NUM_THREADS];
 	pthread_t pthr[NUM_THREADS];
+    pthread_t pthr_master;
 	struct timespec begin, end;   
-	double elapsed;
+	double elapsed, T1, Tp;
+
+    int num_per_thread[NUM_THREADS];
+    int n_base = N / NUM_THREADS;
+    int n_add = N % NUM_THREADS;
+
+    sem_init(&sem, 0, 1);
+ 
     
-   
-	sem_init(&sem, 0, 1);
-   	
+   	/*
+        Sequential calculations
+    */
 	clock_gettime(CLOCK_REALTIME, &begin);
+    
+    // double ans_master = integrate(N);
+    pthread_create(&pthr_master, NULL, start_func, (void*) &N);
+    
+    pthread_join(pthr_master, NULL);
+    double ans_master = ((double)n / N) * V_cube;
+
+    clock_gettime(CLOCK_REALTIME, &end);
+	
+	T1 = end.tv_sec - begin.tv_sec;    
+	T1 += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+	std::cout << "Time of work sequential  = " << T1 << " sec" << std::endl; 
+    std::cout << "Answer sequential: integral = " << ans_master << std::endl; 
+
+
+    /*
+        Multithread calculations
+    */
+    n = 0;
+
+    
+    clock_gettime(CLOCK_REALTIME, &begin);
    
-   
-	for (int i = 0; i < NUM_THREADS; ++i){
-		rc = pthread_create(&pthr[i], NULL, start_func, (void*) &N_per_thread);      
+	for (int i = 0; i < NUM_THREADS; ++i) {
+        if (n_add != 0) {
+            num_per_thread[i] = n_base + 1;
+            n_add -= 1;
+        } 
+        else {
+            num_per_thread[i] = n_base;
+        }
+		rc = pthread_create(&pthr[i], NULL, start_func, (void*) &num_per_thread[i]);      
 		
 		if (rc){
 			printf("ERROR; return code from pthread_create() is %d\n", rc);
@@ -148,113 +212,21 @@ int main(int argc, char *argv[]){
 
  	clock_gettime(CLOCK_REALTIME, &end);
 	
-	elapsed = end.tv_sec - begin.tv_sec;    
-	elapsed += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
-	std::cout << "Time of work = " << elapsed << std::endl; 
-    
+	Tp = end.tv_sec - begin.tv_sec;    
+	Tp += (end.tv_nsec - begin.tv_nsec) / 1000000000.0;
+	std::cout << "Time of work = " << Tp << " sec" << std::endl; 
     
 	sem_destroy(&sem);
+
+
+    write_data(T1, Tp, NUM_THREADS);
+
+
+
+
 	
   	return 0;
 }
 
-
-
-// int main() {
-
-//     int N = 1000;
-//     double x_min = 0;
-//     double x_max = 3.14;
-//     double y_min = 0;
-//     double y_max = 1;
-//     double z_min = 0;
-//     double z_max = 3.14 / 2;
-//     double V_cube = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
-
-//     int N_per_thread = N / NUM_THREADS;
-
-
-//     pthread_t pthr[NUM_THREADS];
-//     int n = 0;
-//     void *arg;
-
-//     sem_init(&s, 0, 1);
-
-
-//     for (int i = 0; i < NUM_THREADS; i++) {
-//         bool rc = pthread_create(&pthr[i], NULL, func, (void*) &param);
-        
-//         if (rc) {
-//             printf("ERROR; return code from pthread_create() is %d \n", rc);
-//         }
-//     }
-
-//     for(int i = 0; i < NUM_THREADS; i++){
-//         bool rc = pthread_join(pthr[i], &arg);  // записываем по адресу &arg адрес возвращаемой переменной
-//         printf("returned value from func  %d  \n", *(int*)arg);
-
-//         if (rc) {
-//             printf("ERROR; return code from pthread_join() is %d \n", rc);
-//         }
-//     }
-
-
-    // -----------------------------------------------------------------
-
-    // std::cout << uniform_random_double(0, 1) << std::endl; 
-
-    // std::cout << integrate(100000) << std::endl;
-
-    // unsigned int seed = 42;
-    // for (int i = 0; i < 50; i++) {
-    //     unsigned int seed = 0;
-    //     std::cout << (float)rand_r(&seed) / RAND_MAX << std::endl; 
-    // }
-
-    // srand(10);
-    // for (int i = 0; i < 10; i++) {
-    //     std::cout << (float)rand() / RAND_MAX << std::endl; 
-    // }
-
-    // int x_k = 6;
-
-    // float x = ((float)rand_r(&x_k) / RAND_MAX) * (i_final - i_init) + i_init;
-    
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-    // std::random_device rd;  // Will be used to obtain a seed for the random number engine
-    // std::mt19937 gen(rd()); // Standard mersenne_twister_engine seeded with rd()
-
-    // // std::default_random_engine rd;  // fix default random seed
-
-    // // Declaring the upper and lowerbounds
-    // double lower_bound = 0;
-    // double upper_bound = 100;
- 
-    // std::uniform_real_distribution<double> unif(lower_bound,
-    //                                             upper_bound);
- 
-    // // Getting a random double value
-    // double random_double = unif(rd);
- 
-    // std::cout << random_double << std::endl;
-
-
-
-
-//     return 0;
-// }
 
 
