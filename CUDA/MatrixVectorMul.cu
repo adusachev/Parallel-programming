@@ -22,7 +22,7 @@ void MatrixVectorMul(float* A, float* x, float* y, int width) {
 
 int main(int argc, char *argv[]) {
 
-	int height = 1280; int width = 3840;
+	int height = 1024; int width = 3840;
     // int height = 32; int width = 16;
 
 	float *h_A = new float[height * width];  // matrix
@@ -54,6 +54,7 @@ int main(int argc, char *argv[]) {
 	// int blockSize = 32;
 
 	int num_blocks = (height + blockSize - 1) / blockSize;
+	std::cout << "blockSize = " << blockSize << "; num_blocks = " << num_blocks << std::endl;
 
 	// measure calculations time
 	cudaEvent_t start, end;
