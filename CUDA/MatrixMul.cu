@@ -16,11 +16,12 @@ void MatrixMul(float* A, float* B, float* C, int mid_size) {
     int height = blockDim.x * gridDim.x;
     int width = blockDim.y * gridDim.y;
 
-    C[i * width + j] = .0f;
+	float res = .0f;
 
     for (int k = 0; k < mid_size; ++k) {
-        C[i * width + j] += A[i * mid_size + k] * B[k * width + j];
+        res += A[i * mid_size + k] * B[k * width + j];
     }
+	C[i * width + j] = res;
 }
 
 
