@@ -125,6 +125,7 @@ int main() {
 
 	delete[] h_B;
 	delete[] h_BT;
+	delete[] cpu_BT;
 
 	return 0;
 }
