@@ -72,6 +72,7 @@ double integral_v2(double *f, double h, int N) {
     int tid;
     double begin = omp_get_wtime();
     double integral = h * 0.5 * (f[0] + f[N]);
+    // std::cout << "sum default: " << integral << std::endl;
 
     #pragma omp parallel private(tid)
     {   
@@ -83,8 +84,44 @@ double integral_v2(double *f, double h, int N) {
         tid = omp_get_thread_num();
         #pragma omp critical
         {   
-            std::cout << "Thread " << tid << std::endl;
+            std::cout << "Thread " << tid << "; sum: " << integral << std::endl;
         }
+    }
+
+    double end = omp_get_wtime();
+    double T_p = end - begin;
+    std::cout << "Sum parallel: " << integral << std::endl;
+    std::cout << "Time parallel: " << T_p << " sec" << std::endl;
+
+    return T_p;
+}
+
+
+double integral_v2_debug(double *f, double h, int N) {
+    
+    int tid;
+    double begin = omp_get_wtime();
+    double integral = h * 0.5 * (f[0] + f[N]);
+    std::cout << "sum default: " << integral << std::endl;
+
+    #pragma omp parallel private(tid)
+    {   
+        #pragma omp for reduction(+:integral)
+        for (int i = 1; i < N; i++) {
+            tid = omp_get_thread_num();
+            #pragma omp critical
+            {
+                if (i == 1) {
+                    std::cout << "Thread " << tid << "; sum: " << integral << std::endl;
+                }
+            }
+            integral += f[i] * h;
+        }
+        // tid = omp_get_thread_num();
+        // #pragma omp critical
+        // {   
+        //     std::cout << "Thread " << tid << "; sum: " << integral << std::endl;
+        // }
     }
 
     double end = omp_get_wtime();
@@ -137,6 +174,8 @@ int main(int argc, char *argv[]) {
         multithread calculations
     */
     int num_threads = 4;
+    // int num_threads = atoi(argv[1]);
+    
     omp_set_num_threads(num_threads);
 
     // double T_p = integral_v1(f, h, N);
