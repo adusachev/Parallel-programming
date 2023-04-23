@@ -62,7 +62,9 @@ void *start_func(void* param) {
 
 
     
-    int local = 0;
+    // int local = 0;
+    int *local_ptr = (int*) malloc(sizeof(int));
+
     for (int i = 0; i < N_per_thread; i++) {
         xi = ((double)rand_r(&seed_x) / RAND_MAX) * (3.14 - 0) + 0;
         yi = ((double)rand_r(&seed_y) / RAND_MAX) * (1 - 0) + 0;
@@ -80,22 +82,29 @@ void *start_func(void* param) {
 
 
         if ((yi <= sin(xi)) && (zi <= xi * yi)) {
-            local += 1;
+            // local += 1;
+            *local_ptr += 1;
         }
     }
 
-    std::cout << "Thread " << tid << "; local_n = " << local << std::endl;
+
+
+    sem_wait(&sem);
+    // std::cout << "Thread " << tid << "; local_n = " << local << std::endl;
+    std::cout << "Thread " << tid << "; local_n_ptr = " << *local_ptr << std::endl;
     std::cout << "------------------------------------ " << std::endl;
+    sem_post(&sem);
 
 
+	// sem_wait(&sem);
+	// 	n += local;
+	// sem_post(&sem);
 
-	sem_wait(&sem);
-		n += local;
-	sem_post(&sem);
 
     delete local_pack;
-	pthread_exit(NULL);
-    // pthread_exit((void*) local);
+    
+	// pthread_exit(NULL);
+    pthread_exit((void*) local_ptr);
 }
 
 
@@ -105,6 +114,8 @@ int main(int argc, char *argv[]){
     // int NUM_THREADS = atoi(argv[1]);
     int NUM_THREADS = 4;
 
+    void *arg;
+    int ret_val;
   	int rc;
     int N = 10000000;
     double x_min = 0;
@@ -138,7 +149,12 @@ int main(int argc, char *argv[]){
     pack->thread_id = 0;
     pthread_create(&pthr_master, NULL, start_func, (void*) pack);
     
-    pthread_join(pthr_master, NULL);
+    rc = pthread_join(pthr_master, &arg);
+    ret_val = *(int*)arg;
+    std::cout << "Value from func of the master thread is " << ret_val << std::endl;
+    n += ret_val;
+
+    // pthread_join(pthr_master, NULL);
     double ans_master = ((double)n / N) * V_cube;
 
     clock_gettime(CLOCK_REALTIME, &end);
@@ -178,8 +194,13 @@ int main(int argc, char *argv[]){
    
 
 	for (int i = 0; i < NUM_THREADS; i++) {
-        // rc = pthread_join(pthr[i], &arg);
-		rc = pthread_join(pthr[i], NULL);
+
+        rc = pthread_join(pthr[i], &arg);
+        ret_val = *(int*)arg;
+		std::cout << "Value from func of the thread #" << i << " is " << ret_val << std::endl;
+        n += ret_val;
+
+		// rc = pthread_join(pthr[i], NULL);
 	}
 	
 	std::cout << "I am main thread. n = " << n << std::endl; 
