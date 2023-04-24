@@ -21,21 +21,6 @@ void write_data(int N, double T_1, double T_p, int n_proc, std::string filename=
 }
 
 
-int N_from_cli(int argc, char *argv[]) {
-    /*
-    Returns an integer passed through the command line to the main function
-    (e.g.: ./a.out 1000)
-    */
-    assert (argc == 2);
-    int val;
-    std::istringstream iss( argv[1] );
-    iss >> val;
-
-    return val;
-}
-
-
-
 
 double trap_kotes(double left, double right, int n, double h) {
     double f_0, f_n, f_i, x_cur;
@@ -70,7 +55,7 @@ int main(int argc, char *argv[]) {
     MPI_Status Status;
 
 
-    int N = N_from_cli(argc, argv);
+    int N = atoi(argv[1]);
 
     double a = 0;
     double b = 1;
