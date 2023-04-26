@@ -98,30 +98,36 @@ double integral_v2(double *f, double h, int N) {
 
 
 double integral_v2_debug(double *f, double h, int N) {
-    
-    int tid;
+    /*
+        frunction integral_v2() with some debug info
+    */
+    int tid, j;
     double begin = omp_get_wtime();
     double integral = h * 0.5 * (f[0] + f[N]);
     std::cout << "sum default: " << integral << std::endl;
 
-    #pragma omp parallel private(tid)
+    #pragma omp parallel private(tid, j)
     {   
+        tid = omp_get_thread_num();
+        j = 1;
         #pragma omp for reduction(+:integral)
-        for (int i = 1; i < N; i++) {
-            tid = omp_get_thread_num();
-            #pragma omp critical
-            {
-                if (i == 1) {
-                    std::cout << "Thread " << tid << "; sum: " << integral << std::endl;
+        for (int i = 1; i < N; i++) {     
+
+            if (j == 1) {
+                #pragma omp critical
+                {
+                    std::cout << "Thread " << tid << "; sum local init: " << integral << std::endl;
+                    j++;
                 }
             }
+
+            // #pragma omp critical  // use only with small values of N
+            // {
+            //     std::cout << "Thread " << tid << "; i = " << i << std::endl;
+            // }
+
             integral += f[i] * h;
         }
-        // tid = omp_get_thread_num();
-        // #pragma omp critical
-        // {   
-        //     std::cout << "Thread " << tid << "; sum: " << integral << std::endl;
-        // }
     }
 
     double end = omp_get_wtime();
@@ -138,8 +144,8 @@ double integral_v2_debug(double *f, double h, int N) {
 int main(int argc, char *argv[]) {
 
 
-    int N = (int)1e8;
-    double h = 1e-8;
+    int N = (int)10;
+    double h = 1e-1;
 
     // grid values
     double* x = new double[N+1];
@@ -178,8 +184,11 @@ int main(int argc, char *argv[]) {
     
     omp_set_num_threads(num_threads);
 
+    // three versions of implementation:
+    
     // double T_p = integral_v1(f, h, N);
     double T_p = integral_v2(f, h, N);
+    // double T_p = integral_v2_debug(f, h, N);
 
     write_data(T_1, T_p, num_threads);
 
