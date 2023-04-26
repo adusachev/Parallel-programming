@@ -12,7 +12,6 @@
 
 #define gettid() syscall(SYS_gettid)
 
-// #define NUM_THREADS 2
 sem_t sem;
 int n = 0;
 
@@ -62,49 +61,40 @@ void *start_func(void* param) {
 
 
     
-    // int local = 0;
-    int *local_ptr = (int*) malloc(sizeof(int));
+    int local = 0;
+    // int *local_ptr = (int*) malloc(sizeof(int));
 
     for (int i = 0; i < N_per_thread; i++) {
         xi = ((double)rand_r(&seed_x) / RAND_MAX) * (3.14 - 0) + 0;
         yi = ((double)rand_r(&seed_y) / RAND_MAX) * (1 - 0) + 0;
         zi = ((double)rand_r(&seed_z) / RAND_MAX) * (1.57 - 0) + 0;
         
-        // xi = ((double)rand() / RAND_MAX) * (3.14 - 0) + 0;
-        // yi = ((double)rand() / RAND_MAX) * (1 - 0) + 0;
-        // zi = ((double)rand() / RAND_MAX) * (1.57 - 0) + 0;
-
-        // sem_wait(&sem);
-        // if (i < 1) {
-        //     std::cout << xi << ", " << yi << ", " << zi << std::endl;
-        // }
-        // sem_post(&sem);
 
 
         if ((yi <= sin(xi)) && (zi <= xi * yi)) {
-            // local += 1;
-            *local_ptr += 1;
+            local += 1;
+            // *local_ptr += 1;
         }
     }
 
 
 
     sem_wait(&sem);
-    // std::cout << "Thread " << tid << "; local_n = " << local << std::endl;
-    std::cout << "Thread " << tid << "; local_n_ptr = " << *local_ptr << std::endl;
+    std::cout << "Thread " << tid << "; local_n = " << local << std::endl;
+    // std::cout << "Thread " << tid << "; local_n_ptr = " << *local_ptr << std::endl;
     std::cout << "------------------------------------ " << std::endl;
     sem_post(&sem);
 
 
-	// sem_wait(&sem);
-	// 	n += local;
-	// sem_post(&sem);
+	sem_wait(&sem);
+		n += local;
+	sem_post(&sem);
 
 
     delete local_pack;
     
-	// pthread_exit(NULL);
-    pthread_exit((void*) local_ptr);
+	pthread_exit(NULL);
+    // pthread_exit((void*) local_ptr);
 }
 
 
@@ -149,12 +139,13 @@ int main(int argc, char *argv[]){
     pack->thread_id = 0;
     pthread_create(&pthr_master, NULL, start_func, (void*) pack);
     
-    rc = pthread_join(pthr_master, &arg);
-    ret_val = *(int*)arg;
-    std::cout << "Value from func of the master thread is " << ret_val << std::endl;
-    n += ret_val;
+    // rc = pthread_join(pthr_master, &arg);
+    // ret_val = *(int*)arg;
+    // std::cout << "Value from func of the master thread is " << ret_val << std::endl;
+    // n += ret_val;
+    // free(arg);
 
-    // pthread_join(pthr_master, NULL);
+    pthread_join(pthr_master, NULL);
     double ans_master = ((double)n / N) * V_cube;
 
     clock_gettime(CLOCK_REALTIME, &end);
@@ -194,13 +185,13 @@ int main(int argc, char *argv[]){
    
 
 	for (int i = 0; i < NUM_THREADS; i++) {
+        // rc = pthread_join(pthr[i], &arg);
+        // ret_val = *(int*)arg;
+		// std::cout << "Value from func of the thread #" << i << " is " << ret_val << std::endl;
+        // n += ret_val;
+        // free(arg);
 
-        rc = pthread_join(pthr[i], &arg);
-        ret_val = *(int*)arg;
-		std::cout << "Value from func of the thread #" << i << " is " << ret_val << std::endl;
-        n += ret_val;
-
-		// rc = pthread_join(pthr[i], NULL);
+		rc = pthread_join(pthr[i], NULL);
 	}
 	
 	std::cout << "I am main thread. n = " << n << std::endl; 
@@ -225,35 +216,5 @@ int main(int argc, char *argv[]){
 	
   	return 0;
 }
-
-
-
-
-// double integrate(int N) {
-//     double x_min = 0;
-//     double x_max = 3.14;
-//     double y_min = 0;
-//     double y_max = 1;
-//     double z_min = 0;
-//     double z_max = 3.14 / 2;
-
-//     double xi, yi, zi;
-//     double V_cube = (x_max - x_min) * (y_max - y_min) * (z_max - z_min);
-
-//     int n_master = 0;
-//     for (int i = 0; i < N; i++) {
-//         xi = ((float)rand() / RAND_MAX) * (3.14 - 0) + 0;
-//         yi = ((float)rand() / RAND_MAX) * (1 - 0) + 0;
-//         zi = ((float)rand() / RAND_MAX) * (1.57 - 0) + 0;
-
-//         if ((yi <= sin(xi)) && (zi <= xi * yi)) {
-//             n_master += 1;
-//         }
-//     }
-
-//     double ans_monte_carlo = ((double)n_master / N) * V_cube;
-    
-//     return ans_monte_carlo;
-// }
 
 
