@@ -16,3 +16,5 @@ Multithreading_examples/
 draft_*
 test_graph*.png
 CUDA/results.csv
+CUDA/seminars/__pycache__/
+venv/
